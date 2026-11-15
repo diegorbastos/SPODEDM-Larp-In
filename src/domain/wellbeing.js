@@ -21,6 +21,7 @@ export function initialState() {
   return {
     version: 1,
     onboarded: false,
+    protectionEnabled: false,
     preferences: networks.map(network => ({ ...network, limit: 30 })),
     usage: [],
     focus: null,
@@ -34,6 +35,7 @@ export function validateState(state) {
       !Array.isArray(state.preferences) || state.preferences.length !== networks.length ||
       !Array.isArray(state.usage) || !Array.isArray(state.sessions)) fail();
   if (networks.some(n => state.preferences.filter(p => p.id === n.id).length !== 1)) fail();
+  if (state.protectionEnabled !== undefined && typeof state.protectionEnabled !== 'boolean') fail();
   for (const p of state.preferences) {
     if (!Number.isInteger(p.limit) || p.limit < 1 || p.limit > 1440 ||
         typeof p.intention !== 'string' || p.intention.length > 100) fail();

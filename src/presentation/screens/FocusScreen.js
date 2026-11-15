@@ -5,7 +5,7 @@ import { colors as c } from '../theme/tokens';
 import { useWellbeing } from '../state/WellbeingProvider';
 
 export default function FocusScreen() {
-  const { state, busy, error, clock, execute } = useWellbeing();
+  const { state, busy, error, clock, execute, device } = useWellbeing();
   const [duration, setDuration] = useState('25');
   const [confirm, setConfirm] = useState(false);
   const remaining = state.focus ? Math.max(0, Math.ceil((state.focus.endsAt - clock) / 1000)) : Number(duration || 0) * 60;
@@ -18,7 +18,7 @@ export default function FocusScreen() {
       <AppText variant="eyebrow" muted>{state.focus ? 'FOCO EM ANDAMENTO' : 'PRONTO PARA UMA PAUSA?'}</AppText>
     </View></View>
     {state.focus ? <>
-      <AppText style={styles.centerText} muted>Deixe o celular de lado. Seu tempo continua contando mesmo quando você fecha o Larp-In.</AppText>
+      <AppText style={styles.centerText} muted>{device.active ? 'Proteção ativa. ' : 'Sem bloqueio ativo. '}Deixe o celular de lado. Seu tempo continua contando mesmo quando você fecha o Larp-In.</AppText>
       {confirm ? <Card><AppText variant="heading">Encerrar antes do tempo?</AppText><AppText muted>Esta sessão ficará no histórico como interrompida.</AppText><Button title="Continuar meu foco" onPress={() => setConfirm(false)} /><Button title="Sim, encerrar sessão" danger disabled={busy} onPress={async () => { if (await execute('cancelFocus')) setConfirm(false); }} /></Card>
         : <Button title="Encerrar sessão" secondary disabled={busy} onPress={() => setConfirm(true)} />}
     </> : <>
@@ -29,7 +29,7 @@ export default function FocusScreen() {
     </>}
     <Message error>{error}</Message>
     <Card><AppText variant="heading">Troque o scroll por um momento.</AppText><View style={layout.row}><Icon name="walk-outline" color={c.primary} /><AppText muted>Uma caminhada sem pressa.</AppText></View><View style={layout.row}><Icon name="book-outline" color={c.primary} /><AppText muted>Algumas páginas de um livro.</AppText></View><View style={layout.row}><Icon name="cafe-outline" color={c.primary} /><AppText muted>Um café e uma boa conversa.</AppText></View></Card>
-    <AppText variant="caption" muted>Foco voluntário: não bloqueia aplicativos nem envia alarme. Ao voltar, a sessão é atualizada pelo horário salvo.</AppText>
+    <AppText variant="caption" muted>Com proteção ativa, o foco bloqueia os aplicativos associados. No iPhone, sessões com bloqueio precisam durar pelo menos 15 minutos. Não há alarme sonoro.</AppText>
   </Screen>;
 }
 const styles = StyleSheet.create({

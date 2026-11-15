@@ -3,10 +3,12 @@ import { View, StyleSheet, FlatList } from 'react-native';
 import { AppText, Card, Header, Icon, NetworkIcon, ProgressBar, Screen, layout } from '../components/ui';
 import { colors as c } from '../theme/tokens';
 import { useWellbeing } from '../state/WellbeingProvider';
+import UsageReportCard from '../components/UsageReportCard';
+import ProtectionPanel from '../components/ProtectionPanel';
 import { summary, usageOn } from '../../domain/wellbeing';
 
 export default function ProgressScreen() {
-  const { state, clock } = useWellbeing();
+  const { state, clock, device } = useWellbeing();
   const stats = summary(state, new Date(clock));
   const maximum = Math.max(...stats.week.map(d => d.minutes), 1);
   const completed = state.sessions.filter(s => s.status === 'completed');
@@ -15,16 +17,18 @@ export default function ProgressScreen() {
       contentContainerStyle={styles.list}
       ListHeaderComponent={<View style={layout.gap}>
         <Header title="Seu progresso" subtitle="Pequenas escolhas. Novos hábitos." />
-        <Card><AppText variant="eyebrow" muted>ÚLTIMOS 7 DIAS</AppText><AppText variant="title">{stats.week.reduce((sum, d) => sum + d.minutes, 0)} min registrados</AppText>
+        <ProtectionPanel compact />
+        {device.reportOnly && <UsageReportCard days={7} />}
+        {!device.reportOnly && <Card><AppText variant="eyebrow" muted>ÚLTIMOS 7 DIAS</AppText><AppText variant="title">{stats.week.reduce((sum, d) => sum + d.minutes, 0)} min registrados</AppText>
           <View style={styles.chart}>{stats.week.map((d, i) => <View key={d.day} style={styles.column} accessible accessibilityLabel={`${d.day}: ${d.recorded ? d.minutes + ' minutos' : 'sem registro'}`}>
             <AppText variant="caption" muted>{d.recorded ? d.minutes : '—'}</AppText>
             <View style={styles.barSpace}><View style={[styles.bar, { height: d.recorded ? Math.max(4, d.minutes / maximum * 100) : 3, backgroundColor: i === 6 ? c.primary : c.track }]} /></View>
             <AppText variant="caption" style={{ color: i === 6 ? c.primary : c.muted }}>{d.label}</AppText>
           </View>)}</View>
-          <AppText variant="caption" muted>Uso informado por você. “—” indica um dia sem registro; não significa zero uso.</AppText>
-        </Card>
-        <AppText variant="heading" style={layout.section}>Hoje, rede por rede</AppText>
-        {state.preferences.map(p => {
+          <AppText variant="caption" muted>Registros automáticos e manuais, conforme autorização no período. “—” indica um dia sem registro; não significa zero uso.</AppText>
+        </Card>}
+        {!device.reportOnly && <AppText variant="heading" style={layout.section}>Hoje, rede por rede</AppText>}
+        {!device.reportOnly && state.preferences.map(p => {
           const used = usageOn(state, stats.today, p.id);
           const recorded = state.usage.some(e => e.day === stats.today && e.networkId === p.id);
           return <Card key={p.id}><View style={layout.row}><NetworkIcon id={p.id} /><View style={layout.flex}><AppText variant="label">{p.name}</AppText><AppText variant="caption" muted>{recorded ? `${used} de ${p.limit} min` : 'Sem registro hoje'}</AppText></View></View><ProgressBar value={used / p.limit} label={`Meta de ${p.name}`} /></Card>;

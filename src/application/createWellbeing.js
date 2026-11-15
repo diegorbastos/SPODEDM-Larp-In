@@ -36,6 +36,15 @@ export function createWellbeing(repository, now = () => new Date()) {
   }
   return {
     load: () => change(() => {}),
+    setProtection: enabled => change(state => { state.protectionEnabled = !!enabled; }),
+    importUsage: entries => change(state => {
+      for (const entry of entries) {
+        preference(state, entry.networkId);
+        wholeMinutes(entry.minutes, 0);
+        if (entry.source !== 'device' || !/^\d{4}-\d{2}-\d{2}$/.test(entry.day)) throw new Error('Registro automático inválido.');
+      }
+      state.usage = [...state.usage.filter(old => !entries.some(e => e.day === old.day && e.networkId === old.networkId)), ...entries];
+    }),
     completeOnboarding: () => change(state => { state.onboarded = true; }),
     updatePreference: (id, limit, intention) => change(state => {
       const item = preference(state, id);

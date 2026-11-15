@@ -22,7 +22,7 @@ export default function WelcomeScreen() {
       <View style={layout.row}><Icon name="lock-closed-outline" color={c.primary} /><AppText>Seu histórico fica neste aparelho.</AppText></View></Card>
     <Message error>{error}</Message>
     <Button title={busy ? 'Preparando…' : 'Começar meu Larp-In'} icon="arrow-forward" disabled={busy} onPress={() => execute('completeOnboarding')} />
-    <AppText variant="caption" muted style={styles.center}>Sem cadastro. Sem feed infinito.{ '\n' }Uso registrado manualmente; não bloqueia outros apps.</AppText>
+    <AppText variant="caption" muted style={styles.center}>Sem cadastro. Sem feed infinito.{ '\n' }Autorize uso automático e bloqueio em Ajustes no build nativo.</AppText>
   </Screen>;
 }
 const styles = StyleSheet.create({
