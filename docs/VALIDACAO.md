@@ -1,3 +1,28 @@
+# Validação da versão 1.1 — integração nativa
+
+## Executado em 15/11/2026
+
+- `npm test`: 24 testes aprovados, incluindo permissões, falhas de coleta, cancelamento de foco, separação das camadas e geração idempotente das extensões iOS.
+- `npx expo install --check`: dependências compatíveis com o Expo SDK 54.
+- `npx expo export --platform all`: bundles Android, iOS e web gerados com sucesso; não compila Kotlin/Swift.
+- Autolinking Android e Apple: módulo local encontrado.
+- `npx expo prebuild --platform android --no-install`: projeto Android gerado.
+- Prévia web: boas-vindas, início e ajustes carregam; proteção aparece desativada e informa a necessidade do build nativo.
+
+## Limites da validação
+
+Os testes JavaScript e a geração do projeto não comprovam o funcionamento das APIs nos aparelhos. O módulo Kotlin e os arquivos Swift ainda precisam de compilação e testes físicos.
+
+- Android: Gradle iniciou a configuração, mas a compilação parou porque este computador não tem Android SDK configurado (`SDK location not found`).
+- iOS: não compilado; Xcode requer um Mac. O teste do plugin inspeciona a estrutura gerada, sem compilar Swift.
+- EAS: conta não autenticada. Conforme solicitado, a entrega se limita ao código e às instruções; nenhum APK/IPA assinado foi gerado nesta etapa.
+- `.github/workflows/native-check.yml`: verificação manual preparada para Android e iOS, ainda não executada.
+- Execute o checklist físico e os builds de `BUILD-NATIVO.md` antes de considerar bloqueio e relatórios validados para distribuição.
+
+---
+
+## Arquivo: validação da versão 1.0 (modo manual)
+
 # Validação e roteiro de apresentação
 
 ## Executado em 15/11/2026

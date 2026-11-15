@@ -1,5 +1,16 @@
 # Larp-In — escopo e rastreabilidade
 
+## Ampliação autorizada na versão 1.1
+
+Após a entrega acadêmica inicial, o usuário solicitou explicitamente bloqueio real
+e dados automáticos para Android e iOS, com builds próprios. Expo Modules, Kotlin,
+Swift, UsageStatsManager, AccessibilityService, FamilyControls, DeviceActivity,
+ManagedSettings e config plugins foram acrescentados para atender esse novo escopo.
+Essas técnicas **não são atribuídas ao material da disciplina**. O restante deste
+documento registra o escopo original da versão 1.0; consulte README e
+BUILD-NATIVO.md para o comportamento atual.
+
+
 Aplicativo acadêmico de bem-estar digital. Identidade própria inspirada na
 referência fornecida e em https://sociallite.app: preto, cartões arredondados,
 hierarquia tipográfica, seletor de redes e navegação inferior. Sem copiar marcas,
