@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Larp-In",
+    "slug": "larp-in",
+    "version": "1.0.0",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#080909",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.diegorbastos.larpin", "buildNumber": "1" },
+    "android": { "package": "com.diegorbastos.larpin", "versionCode": 1 },
+    "web": { "name": "Larp-In", "bundler": "metro" }
+  }
+}
