@@ -1,6 +1,12 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { wellbeing } from './src/composition/services';
+import { WellbeingProvider } from './src/presentation/state/WellbeingProvider';
+import AppNavigator from './src/presentation/navigation/AppNavigator';
 
 export default function App() {
-  return <View><Text>Larp-In</Text></View>;
+  return <SafeAreaProvider><StatusBar style="light" />
+    <WellbeingProvider service={wellbeing}><AppNavigator /></WellbeingProvider>
+  </SafeAreaProvider>;
 }
