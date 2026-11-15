@@ -9,5 +9,5 @@ tmp/
 *.keystore
 play-key.json
 credentials.json
-android/
-ios/
+/android/
+/ios/
