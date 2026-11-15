@@ -15,6 +15,7 @@ export function WellbeingProvider({ service, children }) {
     try {
       const next = await service[method](...args);
       setState(next);
+      setClock(Date.now());
       return true;
     } catch (e) {
       setError(e.message || 'Não foi possível salvar. Tente novamente.');

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -19,10 +20,11 @@ const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, primary: c.primary,
 const icons = { 'Início': 'home-outline', 'Progresso': 'stats-chart-outline', 'Foco': 'moon-outline', 'Ajustes': 'options-outline' };
 
 function Tabs() {
+  const insets = useSafeAreaInsets();
   return <Tab.Navigator screenOptions={({ route }) => ({
     headerShown: false, tabBarActiveTintColor: c.primary, tabBarInactiveTintColor: c.muted,
-    tabBarStyle: { backgroundColor: c.background, borderTopColor: c.border },
-    tabBarLabelStyle: { fontSize: 11 },
+    tabBarStyle: { backgroundColor: c.background, borderTopColor: c.border, height: 64 + insets.bottom, paddingTop: 6, paddingBottom: Math.max(10, insets.bottom) },
+    tabBarLabelStyle: { fontSize: 11, lineHeight: 16 },
     tabBarIcon: ({ color, size }) => <Icon name={icons[route.name]} color={color} size={size} />,
   })}>
     <Tab.Screen name="Início" component={HomeScreen} />

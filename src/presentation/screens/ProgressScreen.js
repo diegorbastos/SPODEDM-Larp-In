@@ -29,7 +29,7 @@ export default function ProgressScreen() {
           const recorded = state.usage.some(e => e.day === stats.today && e.networkId === p.id);
           return <Card key={p.id}><View style={layout.row}><NetworkIcon id={p.id} /><View style={layout.flex}><AppText variant="label">{p.name}</AppText><AppText variant="caption" muted>{recorded ? `${used} de ${p.limit} min` : 'Sem registro hoje'}</AppText></View></View><ProgressBar value={used / p.limit} label={`Meta de ${p.name}`} /></Card>;
         })}
-        <Card><View style={layout.row}><Icon name="leaf-outline" color={c.primary} size={30} /><View style={layout.flex}><AppText variant="heading">{completed.reduce((sum, s) => sum + s.minutes, 0)} min em sessões concluídas</AppText><AppText variant="caption" muted>{completed.length} sessões no histórico local</AppText></View></View></Card>
+        <Card><View style={layout.row}><Icon name="leaf-outline" color={c.primary} size={30} /><View style={layout.flex}><AppText variant="heading">{completed.reduce((sum, s) => sum + s.minutes, 0)} min em sessões concluídas</AppText><AppText variant="caption" muted>{completed.length} {completed.length === 1 ? 'sessão concluída' : 'sessões concluídas'} no histórico local</AppText></View></View></Card>
         <AppText variant="heading" style={layout.section}>Suas pausas</AppText>
       </View>}
       ListEmptyComponent={<Card><AppText muted>Sua primeira pausa começa na aba Foco. O histórico aparece aqui quando uma sessão terminar.</AppText></Card>}
