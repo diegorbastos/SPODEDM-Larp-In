@@ -31,8 +31,8 @@ export function WellbeingProvider({ service, protection, children }) {
     try {
       const result = await protection[method](...args);
       if (result?.state) accept(result);
-      else if (method !== 'showReport') accept(await protection.refresh());
-      return true;
+      else if (method !== 'showReport' && method !== 'getInstalledApps') accept(await protection.refresh());
+      return result !== undefined ? result : true;
     } catch (e) { await recover(e); return false; }
     finally { setBusy(false); }
   }
@@ -44,18 +44,42 @@ export function WellbeingProvider({ service, protection, children }) {
       if (refreshing) return;
       refreshing = true;
       try {
-        const local = await service.load();
-        if (mounted) setState(local);
-        const result = await protection.refresh();
+        // 1. Leitura protegida do MMKV
+        try {
+          const local = await service.load();
+          if (mounted) setState(local);
+        } catch (storageErr) {
+          console.warn('[MMKV] Falha na leitura local:', storageErr);
+        }
+
+        // 2. Leitura nativa com proteção contra travamento da bridge (timeout 6s)
+        const refreshPromise = protection.refresh();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Tempo de resposta do sistema nativo excedido.')), 6000)
+        );
+        const result = await Promise.race([refreshPromise, timeoutPromise]);
         if (mounted) accept(result);
       } catch (e) {
-        if (mounted) { setDeviceError(e.message); setDevice(previous => ({ ...previous, active: false })); }
-      } finally { refreshing = false; }
+        if (mounted) {
+          setDeviceError(e.message || 'Falha ao sincronizar com o sistema nativo.');
+          setDevice(previous => ({ ...previous, active: false }));
+        }
+      } finally {
+        refreshing = false;
+      }
     }
     refresh();
-    const subscription = AppState.addEventListener('change', status => { if (status === 'active') refresh(); });
-    const interval = setInterval(() => { if (AppState.currentState === 'active') refresh(); }, 30000);
-    return () => { mounted = false; subscription.remove(); clearInterval(interval); };
+    const subscription = AppState.addEventListener('change', status => {
+      if (status === 'active') refresh();
+    });
+    const interval = setInterval(() => {
+      if (AppState.currentState === 'active') refresh();
+    }, 30000);
+    return () => {
+      mounted = false;
+      subscription.remove();
+      clearInterval(interval);
+    };
   }, [service, protection]);
 
   useEffect(() => {

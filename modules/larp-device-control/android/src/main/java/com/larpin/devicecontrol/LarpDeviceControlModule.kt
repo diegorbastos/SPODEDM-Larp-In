@@ -19,15 +19,37 @@ class LarpDeviceControlModule : Module() {
         "blockingAuthorized" to enabled.split(':').any { ComponentName.unflattenFromString(it) == expected },
         "reportOnly" to false, "selected" to listOf("instagram", "youtube", "tiktok"))
     }
+    AsyncFunction("hasUsagePermission") {
+      DeviceUsage.hasUsagePermission(context)
+    }
     AsyncFunction("requestUsageAccess") {
       context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
     AsyncFunction("requestBlockingAccess") {
       context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
+    AsyncFunction("getInstalledApps") {
+      val pm = context.packageManager
+      val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
+        addCategory(Intent.CATEGORY_LAUNCHER)
+      }
+      val activities = pm.queryIntentActivities(launcherIntent, 0)
+      activities.mapNotNull { resolveInfo ->
+        val pkg = resolveInfo.activityInfo.packageName
+        if (pkg == context.packageName) null
+        else {
+          val label = resolveInfo.loadLabel(pm).toString()
+          mapOf("packageName" to pkg, "label" to label)
+        }
+      }.sortedBy { it["label"]?.lowercase() }
+    }
     AsyncFunction("getUsage") {
       val capturedAt = System.currentTimeMillis()
       mapOf("capturedAt" to capturedAt, "seconds" to DeviceUsage.secondsToday(context, capturedAt))
+    }
+    AsyncFunction("getDailyUsage") { packagesArg: List<String>? ->
+      val capturedAt = System.currentTimeMillis()
+      mapOf("capturedAt" to capturedAt, "seconds" to DeviceUsage.secondsToday(context, capturedAt, packagesArg))
     }
     AsyncFunction("configure") { json: String ->
       val config = JSONObject(json)

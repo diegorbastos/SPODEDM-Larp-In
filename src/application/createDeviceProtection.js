@@ -72,5 +72,6 @@ export function createDeviceProtection(device, wellbeing) {
     requestUsageAccess: () => device.requestUsageAccess(),
     requestBlockingAccess: () => device.requestBlockingAccess(),
     showReport: days => device.showReport(days),
+    getInstalledApps: () => (device.getInstalledApps ? device.getInstalledApps() : Promise.resolve([])),
   };
 }
