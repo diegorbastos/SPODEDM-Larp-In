@@ -1,4 +1,4 @@
-/** Porta de acesso às capacidades nativas. Não pressupõe paridade Android/iOS. */
+/** Porta de acesso às capacidades nativas Android (uso, bloqueio de vídeos curtos e metas). */
 export class DeviceControl {
   async getStatus() { throw new Error('Implemente getStatus.'); }
   async getUsage() { throw new Error('Implemente getUsage.'); }
@@ -6,6 +6,5 @@ export class DeviceControl {
   async stop() { throw new Error('Implemente stop.'); }
   async requestUsageAccess() { throw new Error('Implemente requestUsageAccess.'); }
   async requestBlockingAccess() { throw new Error('Implemente requestBlockingAccess.'); }
-  async selectApplications(_id) { throw new Error('Implemente selectApplications no iOS.'); }
-  async showReport(_days) { throw new Error('Implemente showReport no iOS.'); }
+  async getInstalledApps() { return []; }
 }

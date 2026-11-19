@@ -1,4 +1,11 @@
-import { dayKey, initialState, validateState, wholeMinutes } from '../domain/wellbeing.js';
+import {
+  dayKey,
+  initialState,
+  normalizeShortVideoBlocks,
+  shortVideoTargets,
+  validateState,
+  wholeMinutes,
+} from '../domain/wellbeing.js';
 
 export function createWellbeing(repository, now = () => new Date()) {
   // Serializa read-modify-write: dois toques não podem sobrescrever os dados.
@@ -9,6 +16,7 @@ export function createWellbeing(repository, now = () => new Date()) {
     return operation;
   }
   function reconcile(state, date) {
+    state.shortVideoBlocks = normalizeShortVideoBlocks(state.shortVideoBlocks);
     if (state.focus && date.getTime() >= state.focus.endsAt) {
       state.sessions = [...state.sessions, { ...state.focus, status: 'completed', finishedAt: state.focus.endsAt }];
       state.focus = null;
@@ -37,6 +45,14 @@ export function createWellbeing(repository, now = () => new Date()) {
   return {
     load: () => change(() => {}),
     setProtection: enabled => change(state => { state.protectionEnabled = !!enabled; }),
+    setShortVideoBlock: (targetId, enabled) => change(state => {
+      if (!shortVideoTargets.some(t => t.id === targetId)) throw new Error('Filtro de vídeo curto inválido.');
+      state.shortVideoBlocks = { ...normalizeShortVideoBlocks(state.shortVideoBlocks), [targetId]: !!enabled };
+    }),
+    setAllShortVideoBlocks: enabled => change(state => {
+      const flag = !!enabled;
+      state.shortVideoBlocks = { reels: flag, shorts: flag, tiktok: flag, others: flag };
+    }),
     importUsage: entries => change(state => {
       for (const entry of entries) {
         preference(state, entry.networkId);

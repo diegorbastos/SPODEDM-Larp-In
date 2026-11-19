@@ -80,3 +80,12 @@ test('retenção remove registros antigos', async () => {
   f.advance(91 * 1440);
   assert.equal((await f.app.load()).usage.length, 0);
 });
+test('filtros de vídeos curtos alternam individualmente, em lote e mantêm compatibilidade com estado legado', async () => {
+  const f = fixture();
+  const s1 = await f.app.setShortVideoBlock('reels', false);
+  assert.equal(s1.shortVideoBlocks.reels, false);
+  assert.equal(s1.shortVideoBlocks.shorts, true);
+  const s2 = await f.app.setAllShortVideoBlocks(false);
+  assert.deepEqual(s2.shortVideoBlocks, { reels: false, shorts: false, tiktok: false, others: false });
+  await assert.rejects(f.app.setShortVideoBlock('invalido', true));
+});

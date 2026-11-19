@@ -1,4 +1,4 @@
-name: Verificacao nativa
+name: Verificacao nativa Android
 
 on:
   workflow_dispatch:
@@ -26,27 +26,3 @@ jobs:
       - run: chmod +x android/gradlew
       - name: Compilar aplicativo e modulo Android
         run: cd android && ./gradlew :app:assembleDebug --no-daemon --console=plain
-  ios:
-    runs-on: macos-15
-    timeout-minutes: 50
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npx expo prebuild --platform ios --no-install
-      - run: cd ios && pod install
-      - name: Compilar iOS e extensoes sem assinatura
-        shell: bash
-        run: |
-          set -o pipefail
-          workspace=$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)
-          scheme=$(node -e "const fs=require('fs');const p=fs.readdirSync('ios').find(f=>f.endsWith('.xcodeproj'));console.log(p.replace('.xcodeproj',''))")
-          xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build | tee ios-build.log
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: ios-build-log
-          path: ios-build.log

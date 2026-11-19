@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Pressable, StyleSheet, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Card, Header, Icon, NetworkIcon, Screen, layout } from '../components/ui';
 import { colors as c, spacing as s, radius as r } from '../theme/tokens';
 import { useWellbeing } from '../state/WellbeingProvider';
-import UsageReportCard from '../components/UsageReportCard';
+import ShortVideoBlockerCard from '../components/ShortVideoBlockerCard';
 import AppLimitModal from '../components/AppLimitModal';
 import ManageAppsModal from '../components/ManageAppsModal';
 import { summary, usageOn } from '../../domain/wellbeing';
 
-// Ativa animações de layout no Android se necessário
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const KNOWN_PACKAGES = {
+  instagram: ['instagram', 'com.instagram.android', 'com.instagram.lite'],
+  youtube: ['youtube', 'com.google.android.youtube', 'app.revanced.android.youtube'],
+  tiktok: ['tiktok', 'com.zhiliaoapp.musically', 'com.ss.android.ugc.trill', 'com.zhiliaoapp.musically.go'],
+};
 
 function formatDuration(minutes) {
   if (!Number.isFinite(minutes) || minutes <= 0) return '0m';
@@ -25,122 +26,185 @@ function formatDuration(minutes) {
 export default function HomeScreen({ navigation }) {
   const { state, clock, device, busy, execute, control } = useWellbeing();
   const [selected, setSelected] = useState('instagram');
-  const [editingApp, setEditingApp] = useState(null);
+  const [editingNetworkId, setEditingNetworkId] = useState(null);
   const [manageAppsVisible, setManageAppsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.96)).current;
 
-  // Entrada suave (Fade + Scale) na montagem do dashboard estilo Opal
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(12)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 450,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 60,
-        friction: 8,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.spring(translateYAnim, { toValue: 0, speed: 24, bounciness: 3, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, translateYAnim]);
 
-  const stats = summary(state, new Date(clock));
-  const automaticToday = state.usage.some(e => e.day === stats.today && e.source === 'device');
+  const stats = useMemo(() => summary(state, new Date(clock)), [state, clock]);
+  const automaticToday = useMemo(
+    () => state.usage.some(e => e.day === stats.today && e.source === 'device'),
+    [state.usage, stats.today]
+  );
+  const isLive = Boolean(device.active || device.monitoringActive || automaticToday);
   const progressRatio = stats.goal > 0 ? Math.min(stats.total / stats.goal, 1) : 0;
   const isOverLimit = stats.total > stats.goal;
 
-  async function handleSaveLimit(networkId, newLimit, intention) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    await execute('updatePreference', networkId, newLimit, intention);
-    setEditingApp(null);
-  }
+  useEffect(() => {
+    if (!isLive) {
+      pulseAnim.setValue(0.45);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.35, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isLive, pulseAnim]);
+
+  const editingApp = useMemo(
+    () => state.preferences.find(p => p.id === editingNetworkId) || null,
+    [state.preferences, editingNetworkId]
+  );
+
+  const selectedPackages = useMemo(
+    () => state.preferences.flatMap(p => KNOWN_PACKAGES[p.id] || [p.id]),
+    [state.preferences]
+  );
+
+  const handleSaveLimit = useCallback(async (networkId, newLimit, intention) => {
+    return execute('updatePreference', networkId, newLimit, intention);
+  }, [execute]);
+
+  const handleRecordUsage = useCallback(async (networkId, minutes) => {
+    return execute('recordUsage', networkId, minutes);
+  }, [execute]);
+
+  const handleGetInstalledApps = useCallback(() => control('getInstalledApps'), [control]);
+
+  const handleSelectInstalledApp = useCallback(app => {
+    const pkg = String(app.packageName || '').toLowerCase();
+    const label = String(app.label || '').toLowerCase();
+    const existing = state.preferences.find(p => {
+      const aliases = KNOWN_PACKAGES[p.id] || [p.id];
+      return aliases.includes(pkg) || p.name.toLowerCase() === label;
+    });
+    if (existing) {
+      setManageAppsVisible(false);
+      setSelected(existing.id);
+      setEditingNetworkId(existing.id);
+      return true;
+    }
+    return false;
+  }, [state.preferences]);
+
+  const handleOpenDetails = useCallback(networkId => {
+    navigation.navigate('Network', { networkId });
+  }, [navigation]);
+
+  const statusBadgeText = device.active
+    ? 'ESCUDO ON'
+    : (device.monitoringActive || automaticToday)
+      ? 'EM FUNDO'
+      : 'MANUAL';
 
   return (
     <Screen style={styles.screenContent}>
-      {/* HEADER MINIMALISTA ESTILO OPAL */}
       <Header
         title="Larp-In"
         subtitle="Menos tela. Mais presença."
         trailing={
-          <View style={styles.liveIndicator}>
-            <View style={styles.pulsingDot} />
-            <AppText variant="caption" style={styles.liveText}>
-              {automaticToday ? 'AO VIVO' : 'LOCAL'}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir permissões e escudo em Ajustes"
+            onPress={() => navigation.navigate('Ajustes')}
+            style={({ pressed }) => [
+              styles.liveIndicator,
+              isLive ? styles.liveIndicatorLit : styles.liveIndicatorDim,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.pulsingDot,
+                isLive ? styles.dotLit : styles.dotDim,
+                { opacity: pulseAnim },
+              ]}
+            />
+            <AppText variant="caption" style={isLive ? styles.liveTextLit : styles.liveTextDim}>
+              {statusBadgeText}
             </AppText>
-          </View>
+          </Pressable>
         }
       />
 
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }], gap: s.lg }}>
-        {device.reportOnly ? (
-          <UsageReportCard />
-        ) : (
-          /* HERO: O CÍRCULO CENTRAL DO OPAL (DIAL DE TEMPO) */
-          <View style={styles.dialContainer}>
-            <View style={[styles.outerGlowRing, isOverLimit && styles.outerGlowRingAlert]}>
-              <View style={styles.dialRing}>
-                <View style={styles.dialInner}>
-                  <AppText variant="eyebrow" muted style={styles.dialEyebrow}>
-                    TEMPO DE TELA HOJE
-                  </AppText>
-                  
-                  <AppText variant="metric" style={styles.dialMetric}>
-                    {stats.recorded ? formatDuration(stats.total) : '0m'}
-                  </AppText>
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: translateYAnim }], gap: s.lg }}>
+        {/* DIAL CENTRAL */}
+        <View style={styles.dialContainer}>
+          <View style={[styles.outerGlowRing, isOverLimit && styles.outerGlowRingAlert]}>
+            <View style={styles.dialRing}>
+              <View style={styles.dialInner}>
+                <AppText variant="eyebrow" muted style={styles.dialEyebrow}>
+                  TEMPO DE TELA HOJE
+                </AppText>
 
-                  <View style={[styles.statusPill, isOverLimit ? styles.statusPillAlert : styles.statusPillSuccess]}>
-                    <View style={[styles.statusDot, isOverLimit ? styles.statusDotAlert : styles.statusDotSuccess]} />
-                    <AppText variant="caption" style={isOverLimit ? styles.statusTextAlert : styles.statusTextSuccess}>
-                      {isOverLimit ? 'LIMITE DIÁRIO ATINGIDO' : `META: ${formatDuration(stats.goal)}`}
-                    </AppText>
-                  </View>
+                <AppText variant="metric" style={styles.dialMetric}>
+                  {stats.recorded ? formatDuration(stats.total) : '0m'}
+                </AppText>
 
-                  {stats.focusMinutes > 0 && (
-                    <AppText variant="caption" style={styles.focusText}>
-                      ✦ {stats.focusMinutes} min de foco preservados
-                    </AppText>
-                  )}
+                <View style={[styles.statusPill, isOverLimit ? styles.statusPillAlert : styles.statusPillSuccess]}>
+                  <View style={[styles.statusDot, isOverLimit ? styles.statusDotAlert : styles.statusDotSuccess]} />
+                  <AppText variant="caption" style={isOverLimit ? styles.statusTextAlert : styles.statusTextSuccess}>
+                    {isOverLimit ? 'LIMITE DIÁRIO ATINGIDO' : `META: ${formatDuration(stats.goal)}`}
+                  </AppText>
                 </View>
-              </View>
-            </View>
 
-            {/* BARRA DE PROGRESSO FINÍSSIMA COM CURVAS OPAL */}
-            <View style={styles.progressBarWrapper}>
-              <View style={styles.progressBarTrack}>
-                <View 
-                  style={[
-                    styles.progressBarFill, 
-                    { width: `${progressRatio * 100}%` },
-                    isOverLimit && styles.progressBarFillAlert
-                  ]} 
-                />
-              </View>
-              <View style={layout.between}>
-                <AppText variant="caption" muted>
-                  {stats.recorded ? `${Math.round(progressRatio * 100)}% da meta diária` : 'Sem registros ainda'}
-                </AppText>
-                <AppText variant="caption" muted>
-                  {formatDuration(stats.goal)}
-                </AppText>
+                {stats.focusMinutes > 0 && (
+                  <AppText variant="caption" style={styles.focusText}>
+                    ✦ {stats.focusMinutes} min de foco preservados
+                  </AppText>
+                )}
               </View>
             </View>
           </View>
-        )}
 
-        {/* SEÇÃO: SELEÇÃO INTENCIONAL DAS REDES */}
+          <View style={styles.progressBarWrapper}>
+            <View style={styles.progressBarTrack}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${progressRatio * 100}%` },
+                  isOverLimit && styles.progressBarFillAlert,
+                ]}
+              />
+            </View>
+            <View style={layout.between}>
+              <AppText variant="caption" muted>
+                {stats.recorded ? `${Math.round(progressRatio * 100)}% da meta diária` : 'Toque em um app abaixo para registrar ou ajustar meta'}
+              </AppText>
+              <AppText variant="caption" muted>
+                {formatDuration(stats.goal)}
+              </AppText>
+            </View>
+          </View>
+        </View>
+
+        {/* BLOQUEADOR RÁPIDO DE REELS, SHORTS, TIKTOK E AFINS */}
+        <ShortVideoBlockerCard compact onOpenSettings={() => navigation.navigate('Ajustes')} />
+
+        {/* SEÇÃO: TEMPO POR APLICATIVO */}
         <View style={styles.sectionHeader}>
           <AppText variant="eyebrow" muted>SEU TEMPO POR APLICATIVO</AppText>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Gerenciar aplicativos instalados"
             onPress={() => setManageAppsVisible(true)}
-            style={styles.manageBtn}
+            style={({ pressed }) => [styles.manageBtn, pressed && styles.pressed]}
           >
             <Icon name="apps-outline" size={14} color={c.primary} />
-            <AppText variant="caption" style={styles.manageBtnText}>Apps do Celular</AppText>
+            <AppText variant="caption" style={styles.manageBtnText}>Apps Android</AppText>
           </Pressable>
         </View>
 
@@ -156,16 +220,20 @@ export default function HomeScreen({ navigation }) {
                 accessibilityLabel={`${p.name}: ${currentMin} de ${p.limit} minutos. Toque para ajustar meta.`}
                 onPress={() => {
                   setSelected(p.id);
-                  setEditingApp(p);
+                  setEditingNetworkId(p.id);
                 }}
-                style={[styles.networkRow, isSelected && styles.networkRowActive]}
+                style={({ pressed }) => [
+                  styles.networkRow,
+                  isSelected && styles.networkRowActive,
+                  pressed && styles.pressed,
+                ]}
               >
                 <View style={styles.networkLeft}>
                   <NetworkIcon id={p.id} />
                   <View style={layout.flex}>
                     <AppText variant="heading" style={styles.networkName}>{p.name}</AppText>
                     <AppText variant="caption" muted numberOfLines={1}>
-                      Toque para ajustar meta · {p.intention}
+                      {p.intention}
                     </AppText>
                   </View>
                 </View>
@@ -186,11 +254,12 @@ export default function HomeScreen({ navigation }) {
           })}
         </View>
 
-        {/* CARTÃO DE AÇÃO RÁPIDA: SESSÃO DE FOCO (ESTILO OPAL) */}
+        {/* CARTÃO DE AÇÃO RÁPIDA: FOCO */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Iniciar ou acompanhar sessão de foco"
           onPress={() => navigation.navigate('Foco')}
+          style={({ pressed }) => [pressed && styles.pressed]}
         >
           <Card style={styles.focusActionCard}>
             <View style={layout.between}>
@@ -203,7 +272,9 @@ export default function HomeScreen({ navigation }) {
                   {state.focus ? 'Sessão de Foco em Andamento' : 'Pausar Notificações e Distrações'}
                 </AppText>
                 <AppText variant="caption" muted>
-                  {state.focus ? 'Toque para verificar seu progresso e tempo restante.' : 'Fique offline por alguns minutos e recupere seu ritmo.'}
+                  {state.focus
+                    ? 'Toque para verificar seu progresso e tempo restante.'
+                    : 'Fique offline por alguns minutos e recupere seu ritmo.'}
                 </AppText>
               </View>
               <View style={styles.focusIconCircle}>
@@ -214,29 +285,25 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       </Animated.View>
 
-      {/* MODAL DE AJUSTE DE META COM STEPPERS E PRESETS */}
       <AppLimitModal
-        visible={!!editingApp}
+        visible={Boolean(editingApp)}
         network={editingApp}
+        currentUsage={editingApp ? usageOn(state, stats.today, editingApp.id) : 0}
+        allowManualUsage={!device.usageAuthorized}
         busy={busy}
-        onClose={() => setEditingApp(null)}
+        onClose={() => setEditingNetworkId(null)}
         onSave={handleSaveLimit}
+        onRecordUsage={handleRecordUsage}
+        onOpenDetails={handleOpenDetails}
       />
 
-      {/* MODAL DE LISTA DINÂMICA DE APPS INSTALADOS NO ANDROID */}
       <ManageAppsModal
         visible={manageAppsVisible}
         onClose={() => setManageAppsVisible(false)}
-        selectedPackages={state.preferences.map(p => p.id)}
-        getInstalledApps={() => control('getInstalledApps')}
-        onSelectApp={app => {
-          // Se for uma das redes conhecidas, abre para editar
-          const existing = state.preferences.find(p => p.id === app.packageName || p.name.toLowerCase() === app.label.toLowerCase());
-          if (existing) {
-            setManageAppsVisible(false);
-            setEditingApp(existing);
-          }
-        }}
+        selectedPackages={selectedPackages}
+        getInstalledApps={handleGetInstalledApps}
+        onSelectApp={handleSelectInstalledApp}
+        onOpenSettings={() => navigation.navigate('Ajustes')}
       />
     </Screen>
   );
@@ -246,38 +313,58 @@ const styles = StyleSheet.create({
   screenContent: {
     paddingBottom: s.xxl,
   },
+  pressed: {
+    opacity: 0.78,
+  },
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#131911',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: r.pill,
     borderWidth: 1,
-    borderColor: '#293822',
+  },
+  liveIndicatorLit: {
+    backgroundColor: '#162412',
+    borderColor: c.primary,
+  },
+  liveIndicatorDim: {
+    backgroundColor: '#121414',
+    borderColor: '#262B28',
   },
   pulsingDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  dotLit: {
     backgroundColor: c.primary,
   },
-  liveText: {
+  dotDim: {
+    backgroundColor: '#666E69',
+  },
+  liveTextLit: {
     color: c.primary,
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 1,
+  },
+  liveTextDim: {
+    color: c.muted,
     fontWeight: '700',
     fontSize: 10,
     letterSpacing: 1,
   },
   dialContainer: {
     alignItems: 'center',
-    paddingVertical: s.md,
+    paddingVertical: s.sm,
     gap: s.lg,
   },
   outerGlowRing: {
-    width: 230,
-    height: 230,
-    borderRadius: 115,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     borderWidth: 1,
     borderColor: '#1D251A',
     backgroundColor: '#0D110D',
@@ -295,9 +382,9 @@ const styles = StyleSheet.create({
     shadowColor: c.danger,
   },
   dialRing: {
-    width: 204,
-    height: 204,
-    borderRadius: 102,
+    width: 194,
+    height: 194,
+    borderRadius: 97,
     borderWidth: 2,
     borderColor: '#2A3624',
     alignItems: 'center',
@@ -312,8 +399,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   dialMetric: {
-    fontSize: 48,
-    lineHeight: 52,
+    fontSize: 46,
+    lineHeight: 50,
     fontWeight: '700',
     color: c.text,
     letterSpacing: -1.5,

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Larp-In",
     "slug": "larp-in",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#080909",
     "icon": "./assets/icon.png",
@@ -11,14 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#080909"
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.diegorbastos.larpin",
-      "buildNumber": "2"
-    },
     "android": {
       "package": "com.diegorbastos.larpin",
-      "versionCode": 2,
+      "versionCode": 3,
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#080909"
@@ -33,47 +29,10 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "deploymentTarget": "17.4"
-          }
-        }
-      ],
-      "./plugins/withLarpDeviceControl",
       "expo-font"
     ],
     "extra": {
       "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "LarpMonitor",
-                  "bundleIdentifier": "com.diegorbastos.larpin.LarpMonitor",
-                  "entitlements": {
-                    "com.apple.developer.family-controls": true,
-                    "com.apple.security.application-groups": [
-                      "group.com.diegorbastos.larpin"
-                    ]
-                  }
-                },
-                {
-                  "targetName": "LarpReport",
-                  "bundleIdentifier": "com.diegorbastos.larpin.LarpReport",
-                  "entitlements": {
-                    "com.apple.developer.family-controls": true,
-                    "com.apple.security.application-groups": [
-                      "group.com.diegorbastos.larpin"
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        },
         "projectId": "54c6567b-919d-4be0-93ec-5a4d1e277cd7"
       }
     }

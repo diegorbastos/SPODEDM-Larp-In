@@ -3,11 +3,23 @@ import { DeviceControl } from '../domain/DeviceControl';
 
 export class NativeDeviceControl extends DeviceControl {
   async getStatus() {
-    if (!native) return { available: false, usageAuthorized: false, blockingAuthorized: false, reportOnly: false, selected: [] };
+    if (!native) {
+      return {
+        available: false,
+        platform: 'expo-go',
+        usageAuthorized: false,
+        blockingAuthorized: false,
+        selected: [],
+        blockedToday: 0,
+        blockedByTarget: { reels: 0, shorts: 0, tiktok: 0, others: 0 },
+      };
+    }
     return native.getStatus();
   }
   requireNative() {
-    if (!native) throw new Error('Este recurso precisa do aplicativo instalado por APK ou build iOS. Não está disponível no Expo Go ou navegador.');
+    if (!native) {
+      throw new Error('Este recurso precisa do APK Android instalado. No Expo Go ou navegador o app roda em modo manual.');
+    }
     return native;
   }
   async getUsage() { return this.requireNative().getUsage(); }
@@ -15,8 +27,6 @@ export class NativeDeviceControl extends DeviceControl {
   async stop() { if (native) await native.stop(); }
   async requestUsageAccess() { return this.requireNative().requestUsageAccess(); }
   async requestBlockingAccess() { return this.requireNative().requestBlockingAccess(); }
-  async selectApplications(id) { return this.requireNative().selectApplications(id); }
-  async showReport(days) { return this.requireNative().showReport(days); }
   async getInstalledApps() {
     if (!native || typeof native.getInstalledApps !== 'function') return [];
     return native.getInstalledApps();

@@ -1,3 +1,3 @@
 <resources>
-  <string name="larp_accessibility_description">Com sua autorização, o Larp-In identifica qual aplicativo está aberto e cobre sua tela ao atingir a meta ou durante o foco. Não lê mensagens, textos, senhas nem captura a tela. Você pode desativar o serviço a qualquer momento nas configurações do Android.</string>
+  <string name="larp_accessibility_description">Atua silenciosamente em segundo plano sem botão flutuante ou atalho. Identifica apenas Reels, Shorts, TikTok, Kwai, Facebook Reels, Spotlight e limites nos apps monitorados. Não lê mensagens, senhas nem captura a tela.</string>
 </resources>
