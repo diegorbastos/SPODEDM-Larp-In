@@ -17,4 +17,8 @@ export class NativeDeviceControl extends DeviceControl {
   async requestBlockingAccess() { return this.requireNative().requestBlockingAccess(); }
   async selectApplications(id) { return this.requireNative().selectApplications(id); }
   async showReport(days) { return this.requireNative().showReport(days); }
+  async getInstalledApps() {
+    if (!native || typeof native.getInstalledApps !== 'function') return [];
+    return native.getInstalledApps();
+  }
 }

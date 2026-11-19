@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppText, Button, Card, Icon, Message, Screen } from '../components/ui';
 import { colors as c } from '../theme/tokens';
 import { useWellbeing } from '../state/WellbeingProvider';
-import WelcomeScreen from '../screens/WelcomeScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NetworkScreen from '../screens/NetworkScreen';
 import ProgressScreen from '../screens/ProgressScreen';
@@ -34,16 +34,17 @@ function Tabs() {
   </Tab.Navigator>;
 }
 export default function AppNavigator() {
-  const { state, error, busy, execute } = useWellbeing();
+  const { state, device, error, busy, execute } = useWellbeing();
   const [resetConfirmed, setResetConfirmed] = useState(false);
   if (!state) return <Screen><AppText variant="title">Larp-In</AppText>{error ? <Card><Message error>{error}</Message><Button title="Tentar novamente" disabled={busy} onPress={() => execute('load')} />
     {resetConfirmed ? <><AppText>Todos os registros locais serão apagados.</AppText><Button title="Confirmar exclusão dos dados" danger disabled={busy} onPress={() => execute('reset')} /><Button title="Cancelar" secondary onPress={() => setResetConfirmed(false)} /></> : <Button title="Restaurar dados" secondary onPress={() => setResetConfirmed(true)} />}</Card>
     : <ActivityIndicator color={c.primary} accessibilityLabel="Carregando seus dados" />}</Screen>;
+  const isBlocked = !state.onboarded || (device?.available && !device?.usageAuthorized);
   return <NavigationContainer theme={theme}>
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.background } }}>
-      {!state.onboarded ? <Stack.Screen name="Welcome" component={WelcomeScreen} /> : <>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: c.background } }}>
+      {isBlocked ? <Stack.Screen name="Onboarding" component={OnboardingScreen} /> : <>
         <Stack.Screen name="Main" component={Tabs} />
-        <Stack.Screen name="Network" component={NetworkScreen} />
+        <Stack.Screen name="Network" component={NetworkScreen} options={{ animation: 'slide_from_right' }} />
       </>}
     </Stack.Navigator>
   </NavigationContainer>;

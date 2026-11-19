@@ -5,6 +5,12 @@
     "version": "1.1.0",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#080909",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080909"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.diegorbastos.larpin",
@@ -12,11 +18,19 @@
     },
     "android": {
       "package": "com.diegorbastos.larpin",
-      "versionCode": 2
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#080909"
+      },
+      "permissions": [
+        "android.permission.PACKAGE_USAGE_STATS"
+      ]
     },
     "web": {
       "name": "Larp-In",
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
@@ -29,6 +43,39 @@
       ],
       "./plugins/withLarpDeviceControl",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "LarpMonitor",
+                  "bundleIdentifier": "com.diegorbastos.larpin.LarpMonitor",
+                  "entitlements": {
+                    "com.apple.developer.family-controls": true,
+                    "com.apple.security.application-groups": [
+                      "group.com.diegorbastos.larpin"
+                    ]
+                  }
+                },
+                {
+                  "targetName": "LarpReport",
+                  "bundleIdentifier": "com.diegorbastos.larpin.LarpReport",
+                  "entitlements": {
+                    "com.apple.developer.family-controls": true,
+                    "com.apple.security.application-groups": [
+                      "group.com.diegorbastos.larpin"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "54c6567b-919d-4be0-93ec-5a4d1e277cd7"
+      }
+    }
   }
 }

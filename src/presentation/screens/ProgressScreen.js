@@ -4,7 +4,6 @@ import { AppText, Card, Header, Icon, NetworkIcon, ProgressBar, Screen, layout }
 import { colors as c } from '../theme/tokens';
 import { useWellbeing } from '../state/WellbeingProvider';
 import UsageReportCard from '../components/UsageReportCard';
-import ProtectionPanel from '../components/ProtectionPanel';
 import { summary, usageOn } from '../../domain/wellbeing';
 
 export default function ProgressScreen() {
@@ -17,7 +16,6 @@ export default function ProgressScreen() {
       contentContainerStyle={styles.list}
       ListHeaderComponent={<View style={layout.gap}>
         <Header title="Seu progresso" subtitle="Pequenas escolhas. Novos hábitos." />
-        <ProtectionPanel compact />
         {device.reportOnly && <UsageReportCard days={7} />}
         {!device.reportOnly && <Card><AppText variant="eyebrow" muted>ÚLTIMOS 7 DIAS</AppText><AppText variant="title">{stats.week.reduce((sum, d) => sum + d.minutes, 0)} min registrados</AppText>
           <View style={styles.chart}>{stats.week.map((d, i) => <View key={d.day} style={styles.column} accessible accessibilityLabel={`${d.day}: ${d.recorded ? d.minutes + ' minutos' : 'sem registro'}`}>

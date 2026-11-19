@@ -18,13 +18,21 @@ object DeviceUsage {
     @Suppress("DEPRECATION")
     return ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) == AppOpsManager.MODE_ALLOWED
   }
+  fun hasUsagePermission(context: Context): Boolean = permitted(context)
+
   fun dayStart(): Long = Calendar.getInstance().apply {
     set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
   }.timeInMillis
 
+  fun getDailyUsage(context: Context, now: Long = System.currentTimeMillis()): Map<String, Long> = secondsToday(context, now)
+
   // Reconstrói intervalos do app em primeiro plano, recortados na meia-noite local.
   // O lookback recupera um app aberto antes da virada do dia, sem somar o dia anterior.
-  fun secondsToday(context: Context, now: Long = System.currentTimeMillis()): Map<String, Long> {
+  fun secondsToday(
+    context: Context,
+    now: Long = System.currentTimeMillis(),
+    customPackages: List<String>? = null
+  ): Map<String, Long> {
     check(permitted(context)) { "Autorize o acesso ao uso nas configurações do Android." }
     val start = dayStart()
     val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -53,6 +61,15 @@ object DeviceUsage {
       }
     }
     close(now)
-    return packages.mapValues { (_, names) -> names.sumOf { totals[it] ?: 0L } / 1000L }
+
+    val targetMap: Map<String, Set<String>> = if (!customPackages.isNullOrEmpty()) {
+      val customMap = customPackages.associateWith { setOf(it) }.toMutableMap()
+      packages.forEach { (k, v) -> customMap.putIfAbsent(k, v) }
+      customMap
+    } else {
+      packages
+    }
+
+    return targetMap.mapValues { (_, names) -> names.sumOf { totals[it] ?: 0L } / 1000L }
   }
 }
